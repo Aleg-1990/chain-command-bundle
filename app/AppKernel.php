@@ -11,6 +11,9 @@ class AppKernel extends Kernel
             new Symfony\Bundle\FrameworkBundle\FrameworkBundle(),
             new Symfony\Bundle\MonologBundle\MonologBundle(),
             new Sensio\Bundle\FrameworkExtraBundle\SensioFrameworkExtraBundle(),
+            new OroTest\ChainCommandBundle\OroTestChainCommandBundle(),
+            new FooBundle\FooBundle(),
+            new BarBundle\BarBundle(),
         );
 
         if (in_array($this->getEnvironment(), array('dev', 'test'), true)) {
