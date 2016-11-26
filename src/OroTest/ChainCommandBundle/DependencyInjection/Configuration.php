@@ -19,6 +19,19 @@ class Configuration implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('oro_test_chain_command');
+        $rootNode
+            ->children()
+                ->arrayNode('chain')
+                    ->useAttributeAsKey('parent')
+                    ->prototype('array')
+                        ->children()
+//                            ->scalarNode('parent')->end()
+                            ->arrayNode('children')
+                                ->prototype('scalar')->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
 
         // Here you should define the parameters that are allowed to
         // configure your bundle. See the documentation linked above for
