@@ -2,7 +2,9 @@
 
 namespace OroTest\ChainCommandBundle\Test\EventSubscriber;
 
+use Monolog\Logger;
 use OroTest\ChainCommandBundle\EventSubscriber\CommandSubscriber;
+use Psr\Log\NullLogger;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\ConsoleEvents;
@@ -19,8 +21,9 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldErrorIfChained()
     {
         $output = new BufferedOutput();
+        $logger = $this->getMock(NullLogger::class);
         $event = new ConsoleCommandEvent(new Command('foo'), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
-        $listener = new CommandSubscriber(array('bar' => array('children' => array('foo'))));
+        $listener = new CommandSubscriber($logger, array('bar' => array('children' => array('foo'))));
         $listener->errorIfChained($event);
 
         self::assertFalse($event->commandShouldRun());
@@ -32,8 +35,9 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldRunIfNotChained()
     {
         $output = new BufferedOutput();
+        $logger = $this->getMock(NullLogger::class);
         $event = new ConsoleCommandEvent(new Command('foo'), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
-        $listener = new CommandSubscriber(array());
+        $listener = new CommandSubscriber($logger, array());
         $listener->errorIfChained($event);
 
         self::assertTrue($event->commandShouldRun());
@@ -46,8 +50,9 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     {
         $commandName = 'foo';
         $output = new BufferedOutput();
+        $logger = $this->getMock(NullLogger::class);
         $event = new ConsoleCommandEvent(new Command($commandName), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
-        $listener = new CommandSubscriber(array());
+        $listener = new CommandSubscriber($logger, array());
 
         $reflection = new \ReflectionClass(get_class($listener));
         $method = $reflection->getMethod('getCommandName');
@@ -63,6 +68,7 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldRunChained()
     {
         $output = new BufferedOutput();
+        $logger = $this->getMock(NullLogger::class);
         $application = new Application();
         $application->setHelperSet(new HelperSet());
         $commandFoo = (new Command('foo'))->setCode(function(){});
@@ -70,7 +76,7 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
-        $listener = new CommandSubscriber(array('bar' => array('children' => array('foo'))));
+        $listener = new CommandSubscriber($logger, array('bar' => array('children' => array('foo'))));
 
         self::assertEquals($listener->runChainedCommands($event), array('foo' => 0));
     }
@@ -81,6 +87,7 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldFalseIfNoChains()
     {
         $output = new BufferedOutput();
+        $logger = $this->getMock(NullLogger::class);
         $application = new Application();
         $application->setHelperSet(new HelperSet());
         $commandFoo = (new Command('foo'))->setCode(function(){});
@@ -88,7 +95,7 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
-        $listener = new CommandSubscriber(array());
+        $listener = new CommandSubscriber($logger, array());
 
         self::assertFalse($listener->runChainedCommands($event));
     }
@@ -99,8 +106,11 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldReturnEvents()
     {
         self::assertEquals(CommandSubscriber::getSubscribedEvents(), array(
-            ConsoleEvents::COMMAND => 'errorIfChained',
-            ConsoleEvents::TERMINATE => 'runChainedCommands',
+            ConsoleEvents::COMMAND => array(
+                array('errorIfChained', 1),
+                array('writeLogIfParent', 2)
+            ),
+            ConsoleEvents::TERMINATE => 'runChainedCommands'
         ));
     }
 }

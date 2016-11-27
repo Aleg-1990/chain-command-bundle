@@ -28,12 +28,13 @@ class OroTestChainCommandExtensionTest extends \PHPUnit_Framework_TestCase
 
         $extension->load($configs, $container);
 
-        self::assertEquals($container->getDefinition('oro_test_chain_command.command_subscriber')->getArguments(),
+        $arguments = $container->getDefinition('oro_test_chain_command.command_subscriber')->getArguments();
+//        var_dump($arguments);
+        self::assertEquals(
+            array_pop($arguments),
             array(
-                array(
-                    'foo' => array(
-                        'children' => array('bar')
-                    )
+                'foo' => array(
+                    'children' => array('bar')
                 )
             )
         );

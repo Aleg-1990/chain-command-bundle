@@ -24,7 +24,9 @@ class BarHiCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln('<info>Hi from Bar!</info>');
+        $message = 'Hi from Bar!';
+        $this->getContainer()->get('logger')->info($message);
+        $output->writeln(sprintf('<info>%s</info>', $message));
     }
 
 }

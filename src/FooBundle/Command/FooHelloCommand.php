@@ -24,7 +24,9 @@ class FooHelloCommand extends ContainerAwareCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln('<info>Hello from Foo!</info>');
+        $message = 'Hello from Foo!';
+        $this->getContainer()->get('logger')->info($message);
+        $output->writeln(sprintf('<info>%s</info>', $message));
     }
 
 }

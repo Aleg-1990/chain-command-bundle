@@ -2,9 +2,14 @@
 
 namespace OroTest\ChainCommandBundle\EventSubscriber;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Symfony\Component\Console\Event\ConsoleEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
+use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Logger\ConsoleLogger;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
@@ -17,17 +22,23 @@ class CommandSubscriber implements EventSubscriberInterface
     /**
      * @var array
      */
-    private $chain = array();
+    private $chain;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * CommandSubscriber constructor.
      *
-     * @param array $config
+     * @param LoggerInterface $logger
+     * @param array $chain This argument is added in extension class.
      */
-    public function __construct()
+    public function __construct(LoggerInterface $logger, array $chain)
     {
-        $args = func_get_args();
-        $this->chain = array_pop($args);
+        $this->chain = $chain;
+        $this->logger = $logger;
     }
     /**
      * {@inheritdoc}
@@ -35,8 +46,11 @@ class CommandSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents()
     {
         return array(
-            ConsoleEvents::COMMAND => 'errorIfChained',
-            ConsoleEvents::TERMINATE => 'runChainedCommands',
+            ConsoleEvents::COMMAND => array(
+                array('errorIfChained', 1),
+                array('writeLogIfParent', 2)
+            ),
+            ConsoleEvents::TERMINATE => 'runChainedCommands'
         );
     }
 
@@ -51,10 +65,17 @@ class CommandSubscriber implements EventSubscriberInterface
         $application = $event->getCommand()->getApplication();
         if(isset($this->chain[$commandName]) && count($this->chain[$commandName]) > 0) {
             $statusCodes = array();
+            $this->logger->info(sprintf('Executing %s chain members:', $commandName));
             foreach ($this->chain[$commandName]['children'] as $chainedCommandName) {
-                $chainedCommand = $application->find($chainedCommandName);
-                $statusCodes[$chainedCommandName] = $chainedCommand->run(new ArrayInput(array()), $event->getOutput());
+                try {
+                    $chainedCommand = $application->find($chainedCommandName);
+                    $statusCodes[$chainedCommandName] = $chainedCommand->run(new ArrayInput(array()), $event->getOutput());
+                } catch (CommandNotFoundException $e) {
+                    $this->logger->error(sprintf('Command "%s" is not found.', $chainedCommandName));
+                    $event->getOutput()->writeln(sprintf('<error>Command "%s" is not found.</error>', $chainedCommandName));
+                }
             }
+            $this->logger->info(sprintf('Execution of %s chain completed.', $commandName));
             return $statusCodes;
         }
         return false;
@@ -69,9 +90,30 @@ class CommandSubscriber implements EventSubscriberInterface
         foreach ($this->chain as $parent => $chain) {
             if (in_array($commandName, $chain['children'], true)) {
                 $event->disableCommand();
-
                 $event->getOutput()->writeln(sprintf('Command is declared as chained with parent "%s"', $parent));
             }
+        }
+    }
+
+    /**
+     * @param ConsoleCommandEvent $event
+     */
+    public function writeLogIfParent(ConsoleCommandEvent $event)
+    {
+        $commandName = $this->getCommandName($event);
+        $application = $event->getCommand()->getApplication();
+        if(isset($this->chain[$commandName]) && count($this->chain[$commandName]) > 0) {
+            $this->logger->info(sprintf('%s is a master command of a command chain that has registered member commands', $commandName));
+            foreach ($this->chain[$commandName]['children'] as $chainedCommandName) {
+                try {
+                    $application->find($chainedCommandName);
+                } catch (CommandNotFoundException $e) {
+                    $this->logger->error(sprintf('Command "%s" is not found.', $chainedCommandName));
+                    $event->getOutput()->writeln(sprintf('<error>Command "%s" is not found.</error>', $chainedCommandName));
+                }
+                $this->logger->info(sprintf('%s registered as a member of %s command chain', $chainedCommandName, $commandName));
+            }
+            $this->logger->info(sprintf('Executing %s command itself first:', $commandName));
         }
     }
 

@@ -4,5 +4,6 @@ parameters:
 services:
     oro_test_chain_command.command_subscriber:
         class: '%command_subscriber.class%'
+        arguments: ['@logger']
         tags:
             - { name: kernel.event_subscriber }
