@@ -16,11 +16,11 @@ class OroTestChainCommandExtensionTest extends \PHPUnit_Framework_TestCase
             'oro_test_chain_command' => array(
                 'chain' => array(
                     array(
-                        'parent'   => 'foo',
-                        'children' => array('bar')
-                    )
-                )
-            )
+                        'parent' => 'foo',
+                        'children' => array('bar'),
+                    ),
+                ),
+            ),
         );
 
         $extension = new OroTestChainCommandExtension();
@@ -34,8 +34,8 @@ class OroTestChainCommandExtensionTest extends \PHPUnit_Framework_TestCase
             array_pop($arguments),
             array(
                 'foo' => array(
-                    'children' => array('bar')
-                )
+                    'children' => array('bar'),
+                ),
             )
         );
     }

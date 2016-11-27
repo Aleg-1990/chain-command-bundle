@@ -5,7 +5,7 @@ namespace OroTest\ChainCommandBundle\Test\DependencyInjection;
 use OroTest\ChainCommandBundle\DependencyInjection\Configuration;
 use Symfony\Component\Config\Definition\Processor;
 
-class ConfigurationTest extends \PHPUnit_Framework_TestCase
+class CofigurationTest extends \PHPUnit_Framework_TestCase
 {
     /**
      * @test
@@ -21,19 +21,19 @@ class ConfigurationTest extends \PHPUnit_Framework_TestCase
             'oro_test_chain_command' => array(
                 'chain' => array(
                     array(
-                        'parent'   => 'foo',
-                        'children' => array('bar')
-                    )
-                )
+                        'parent' => 'foo',
+                        'children' => array('bar'),
+                    ),
+                ),
             ),
         ));
 
         self::assertEquals(array(
             'chain' => array(
                 'foo' => array(
-                    'children' => array('bar')
-                )
-            )
+                    'children' => array('bar'),
+                ),
+            ),
         ), $config);
     }
 }

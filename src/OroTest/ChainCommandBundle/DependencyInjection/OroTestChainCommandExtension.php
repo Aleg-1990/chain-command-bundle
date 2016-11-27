@@ -26,7 +26,7 @@ class OroTestChainCommandExtension extends Extension
         $loader->load('services.yml');
 
         // pass bundle configuration to listener
-        $listenerDefinition = $container->getDefinition( 'oro_test_chain_command.command_subscriber' );
+        $listenerDefinition = $container->getDefinition('oro_test_chain_command.command_subscriber');
         $listenerDefinition->addArgument($config['chain']);
     }
 }

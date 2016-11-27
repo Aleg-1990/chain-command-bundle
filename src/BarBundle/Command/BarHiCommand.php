@@ -28,5 +28,4 @@ class BarHiCommand extends ContainerAwareCommand
         $this->getContainer()->get('logger')->info($message);
         $output->writeln(sprintf('<info>%s</info>', $message));
     }
-
 }

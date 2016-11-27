@@ -3,13 +3,10 @@
 namespace OroTest\ChainCommandBundle\EventSubscriber;
 
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use Symfony\Component\Console\Event\ConsoleEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Logger\ConsoleLogger;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Console\ConsoleEvents;
 use Symfony\Component\Console\Event\ConsoleCommandEvent;
@@ -33,7 +30,7 @@ class CommandSubscriber implements EventSubscriberInterface
      * CommandSubscriber constructor.
      *
      * @param LoggerInterface $logger
-     * @param array $chain This argument is added in extension class.
+     * @param array           $chain  This argument is added in extension class.
      */
     public function __construct(LoggerInterface $logger, array $chain)
     {
@@ -48,9 +45,9 @@ class CommandSubscriber implements EventSubscriberInterface
         return array(
             ConsoleEvents::COMMAND => array(
                 array('errorIfChained', 1),
-                array('writeLogIfParent', 2)
+                array('writeLogIfParent', 2),
             ),
-            ConsoleEvents::TERMINATE => 'runChainedCommands'
+            ConsoleEvents::TERMINATE => 'runChainedCommands',
         );
     }
 
@@ -63,7 +60,7 @@ class CommandSubscriber implements EventSubscriberInterface
     {
         $commandName = $this->getCommandName($event);
         $application = $event->getCommand()->getApplication();
-        if(isset($this->chain[$commandName]) && count($this->chain[$commandName]) > 0) {
+        if (isset($this->chain[$commandName]) && count($this->chain[$commandName]) > 0) {
             $statusCodes = array();
             $this->logger->info(sprintf('Executing %s chain members:', $commandName));
             foreach ($this->chain[$commandName]['children'] as $chainedCommandName) {
@@ -76,8 +73,10 @@ class CommandSubscriber implements EventSubscriberInterface
                 }
             }
             $this->logger->info(sprintf('Execution of %s chain completed.', $commandName));
+
             return $statusCodes;
         }
+
         return false;
     }
 
@@ -102,7 +101,7 @@ class CommandSubscriber implements EventSubscriberInterface
     {
         $commandName = $this->getCommandName($event);
         $application = $event->getCommand()->getApplication();
-        if(isset($this->chain[$commandName]) && count($this->chain[$commandName]) > 0) {
+        if (isset($this->chain[$commandName]) && count($this->chain[$commandName]) > 0) {
             $this->logger->info(sprintf('%s is a master command of a command chain that has registered member commands', $commandName));
             foreach ($this->chain[$commandName]['children'] as $chainedCommandName) {
                 try {

@@ -2,7 +2,6 @@
 
 namespace OroTest\ChainCommandBundle\Test\EventSubscriber;
 
-use Monolog\Logger;
 use OroTest\ChainCommandBundle\EventSubscriber\CommandSubscriber;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Application;
@@ -71,8 +70,8 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $logger = $this->getMock(NullLogger::class);
         $application = new Application();
         $application->setHelperSet(new HelperSet());
-        $commandFoo = (new Command('foo'))->setCode(function(){});
-        $commandBar = (new Command('bar'))->setCode(function(){});
+        $commandFoo = (new Command('foo'))->setCode(function () {});
+        $commandBar = (new Command('bar'))->setCode(function () {});
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
@@ -90,8 +89,8 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $logger = $this->getMock(NullLogger::class);
         $application = new Application();
         $application->setHelperSet(new HelperSet());
-        $commandFoo = (new Command('foo'))->setCode(function(){});
-        $commandBar = (new Command('bar'))->setCode(function(){});
+        $commandFoo = (new Command('foo'))->setCode(function () {});
+        $commandBar = (new Command('bar'))->setCode(function () {});
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
@@ -108,9 +107,9 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         self::assertEquals(CommandSubscriber::getSubscribedEvents(), array(
             ConsoleEvents::COMMAND => array(
                 array('errorIfChained', 1),
-                array('writeLogIfParent', 2)
+                array('writeLogIfParent', 2),
             ),
-            ConsoleEvents::TERMINATE => 'runChainedCommands'
+            ConsoleEvents::TERMINATE => 'runChainedCommands',
         ));
     }
 }
