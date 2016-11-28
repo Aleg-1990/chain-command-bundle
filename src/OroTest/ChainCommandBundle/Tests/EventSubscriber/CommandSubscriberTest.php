@@ -80,8 +80,10 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $output = new BufferedOutput();
         $application = new Application();
         $application->setHelperSet(new HelperSet());
-        $commandFoo = (new Command('foo'))->setCode(function () {});
-        $commandBar = (new Command('bar'))->setCode(function () {});
+        $commandFoo = new Command('foo');
+        $commandFoo->setCode(function () {});
+        $commandBar = new Command('bar');
+        $commandBar->setCode(function () {});
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
@@ -98,8 +100,10 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $output = new BufferedOutput();
         $application = new Application();
         $application->setHelperSet(new HelperSet());
-        $commandFoo = (new Command('foo'))->setCode(function () {});
-        $commandBar = (new Command('bar'))->setCode(function () {});
+        $commandFoo = new Command('foo');
+        $commandFoo->setCode(function () {});
+        $commandBar = new Command('bar');
+        $commandBar->setCode(function () {});
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandFoo, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
@@ -116,8 +120,10 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $output = new BufferedOutput();
         $application = new Application();
         $application->setHelperSet(new HelperSet());
-        $commandFoo = (new Command('foo'))->setCode(function () {});
-        $commandBar = (new Command('bar'))->setCode(function () {});
+        $commandFoo = new Command('foo');
+        $commandFoo->setCode(function () {});
+        $commandBar = new Command('bar');
+        $commandBar->setCode(function () {});
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
