@@ -96,6 +96,8 @@ class CommandSubscriber implements EventSubscriberInterface
 
     /**
      * @param ConsoleCommandEvent $event
+     *
+     * @return bool True if log has been written and false otherwise.
      */
     public function writeLogIfParent(ConsoleCommandEvent $event)
     {
@@ -113,7 +115,9 @@ class CommandSubscriber implements EventSubscriberInterface
                 $this->logger->info(sprintf('%s registered as a member of %s command chain', $chainedCommandName, $commandName));
             }
             $this->logger->info(sprintf('Executing %s command itself first:', $commandName));
+            return true;
         }
+        return false;
     }
 
     /**

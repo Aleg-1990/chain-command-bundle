@@ -17,13 +17,26 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     /**
      * @test
      */
+    public function shouldReturnEvents()
+    {
+        self::assertEquals(CommandSubscriber::getSubscribedEvents(), array(
+            ConsoleEvents::COMMAND => array(
+                array('errorIfChained', 1),
+                array('writeLogIfParent', 2),
+            ),
+            ConsoleEvents::TERMINATE => 'runChainedCommands',
+        ));
+    }
+
+    /**
+     * @test
+     */
     public function shouldErrorIfChained()
     {
         $output = new BufferedOutput();
-        $logger = $this->getMock(NullLogger::class);
         $event = new ConsoleCommandEvent(new Command('foo'), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
-        $listener = new CommandSubscriber($logger, array('bar' => array('children' => array('foo'))));
-        $listener->errorIfChained($event);
+        $subscriber = $this->getSubscriber(array('bar' => array('children' => array('foo'))));
+        $subscriber->errorIfChained($event);
 
         self::assertFalse($event->commandShouldRun());
     }
@@ -34,10 +47,9 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldRunIfNotChained()
     {
         $output = new BufferedOutput();
-        $logger = $this->getMock(NullLogger::class);
         $event = new ConsoleCommandEvent(new Command('foo'), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
-        $listener = new CommandSubscriber($logger, array());
-        $listener->errorIfChained($event);
+        $subscriber = $this->getSubscriber(array());
+        $subscriber->errorIfChained($event);
 
         self::assertTrue($event->commandShouldRun());
     }
@@ -49,16 +61,15 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     {
         $commandName = 'foo';
         $output = new BufferedOutput();
-        $logger = $this->getMock(NullLogger::class);
         $event = new ConsoleCommandEvent(new Command($commandName), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
-        $listener = new CommandSubscriber($logger, array());
+        $subscriber = $this->getSubscriber(array());
 
-        $reflection = new \ReflectionClass(get_class($listener));
+        $reflection = new \ReflectionClass(get_class($subscriber));
         $method = $reflection->getMethod('getCommandName');
         $method->setAccessible(true);
 
-        self::assertEquals($method->invokeArgs($listener, array($event)), $commandName);
-        self::assertNotEquals($method->invokeArgs($listener, array($event)), 'invalid:name');
+        self::assertEquals($method->invokeArgs($subscriber, array($event)), $commandName);
+        self::assertNotEquals($method->invokeArgs($subscriber, array($event)), 'invalid:name');
     }
 
     /**
@@ -67,7 +78,6 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldRunChained()
     {
         $output = new BufferedOutput();
-        $logger = $this->getMock(NullLogger::class);
         $application = new Application();
         $application->setHelperSet(new HelperSet());
         $commandFoo = (new Command('foo'))->setCode(function () {});
@@ -75,9 +85,27 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
-        $listener = new CommandSubscriber($logger, array('bar' => array('children' => array('foo'))));
+        $subscriber = $this->getSubscriber(array('bar' => array('children' => array('foo'))));
 
-        self::assertEquals($listener->runChainedCommands($event), array('foo' => 0));
+        self::assertEquals($subscriber->runChainedCommands($event), array('foo' => 0));
+    }
+
+    /**
+     * @test
+     */
+    public function shouldIgnoreIfCommandNotFound()
+    {
+        $output = new BufferedOutput();
+        $application = new Application();
+        $application->setHelperSet(new HelperSet());
+        $commandFoo = (new Command('foo'))->setCode(function () {});
+        $commandBar = (new Command('bar'))->setCode(function () {});
+        $application->addCommands(array($commandFoo, $commandBar));
+
+        $event = new ConsoleTerminateEvent($commandFoo, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
+        $subscriber = $this->getSubscriber(array('foo' => array('children' => array('bar', 'baz'))));
+
+        self::assertEquals($subscriber->runChainedCommands($event), array('bar' => 0));
     }
 
     /**
@@ -86,7 +114,6 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
     public function shouldFalseIfNoChains()
     {
         $output = new BufferedOutput();
-        $logger = $this->getMock(NullLogger::class);
         $application = new Application();
         $application->setHelperSet(new HelperSet());
         $commandFoo = (new Command('foo'))->setCode(function () {});
@@ -94,22 +121,47 @@ class CommandSubscriberTest extends \PHPUnit_Framework_TestCase
         $application->addCommands(array($commandFoo, $commandBar));
 
         $event = new ConsoleTerminateEvent($commandBar, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output, 0);
-        $listener = new CommandSubscriber($logger, array());
+        $subscriber = $this->getSubscriber(array());
 
-        self::assertFalse($listener->runChainedCommands($event));
+        self::assertFalse($subscriber->runChainedCommands($event));
     }
 
     /**
      * @test
      */
-    public function shouldReturnEvents()
+    public function shouldNotWriteLogIfNotParent()
     {
-        self::assertEquals(CommandSubscriber::getSubscribedEvents(), array(
-            ConsoleEvents::COMMAND => array(
-                array('errorIfChained', 1),
-                array('writeLogIfParent', 2),
-            ),
-            ConsoleEvents::TERMINATE => 'runChainedCommands',
-        ));
+        $commandName = 'foo';
+        $output = new BufferedOutput();
+        $event = new ConsoleCommandEvent(new Command($commandName), $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
+        $subscriber = $this->getSubscriber(array());
+        self::assertFalse($subscriber->writeLogIfParent($event));
+    }
+
+    /**
+     * @test
+     */
+    public function shouldWriteLogIfParent()
+    {
+        $commandName = 'foo';
+        $output = new BufferedOutput();
+        $application = new Application();
+        $application->setHelperSet(new HelperSet());
+        $command = new Command($commandName);
+        $application->addCommands(array($command));
+        $event = new ConsoleCommandEvent($command, $this->getMock('Symfony\Component\Console\Input\InputInterface'), $output);
+        $subscriber = $this->getSubscriber(array('foo' => array('children' => array('bar'))));
+        self::assertTrue($subscriber->writeLogIfParent($event));
+    }
+
+    /**
+     * @param array $config
+     *
+     * @return CommandSubscriber
+     */
+    private function getSubscriber(array $config)
+    {
+        $logger = new NullLogger();
+        return new CommandSubscriber($logger, $config);
     }
 }
